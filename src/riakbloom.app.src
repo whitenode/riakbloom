@@ -1,0 +1,15 @@
+{application, riakbloom,
+ [
+  {description, "Bloom filter server for Riak"},
+  {vsn, "0.1.0"},
+  {registered, [riakbloom_cache]},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  ebloom,
+                  riak_kv,
+                  mochiweb
+                 ]},
+  {mod, { riakbloom_app, []}},
+  {env, []}
+ ]}.
