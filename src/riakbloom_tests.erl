@@ -31,7 +31,8 @@
          run_test_4/0,
          run_test_5/0,
          run_test_6/0,
-         run_test_7/0
+         run_test_7/0,
+         run_test_8/0
         ]).
 
 -define(MD_INDEX, <<"index">>).
@@ -129,11 +130,27 @@ run_test_3() ->
     io:format("TEST COMPLETED: run_test_3.~n"),
     ok.
 
-%% Test map phase function based on secondary index
+%% Test map phase function based on key in exclude mode
 %% 2 second delay was inserted at key stages to ensure that the post commit hook
 %% has been processed (due to slow test environment)
 run_test_4() ->
-    io:format("TEST: run_test_4 - Test map phase function based on secondary index.~n"),
+    io:format("TEST: run_test_4 - Test map phase function based on key in exclude mode.~n"),
+    verify_test_data_exists(),
+    riakbloom:delete_filter(<<"testfilter">>),
+    timer:sleep(2000),
+    ok = riakbloom:create_filter(<<"testfilter">>, [<<"key1">>,<<"key2">>,<<"key3">>], 10, 0.001, 0),
+    timer:sleep(2000),
+    false = riakbloom:check_key(<<"testfilter">>, <<"key4">>),
+    {ok, C} = riak:local_client(),
+    {ok, [<<"key4">>]} = C:mapred(<<"testbucket">>, [{map, {modfun, riakbloom_mapreduce, map_riakbloom}, "{\"filter_id\":\"testfilter\",\"operation\":\"exclude\"}", false}, {map, {modfun, riakbloom_mapreduce, map_key}, none, true}]),
+    io:format("TEST COMPLETED: run_test_4.~n"),
+    ok.
+
+%% Test map phase function based on secondary index
+%% 2 second delay was inserted at key stages to ensure that the post commit hook
+%% has been processed (due to slow test environment)
+run_test_5() ->
+    io:format("TEST: run_test_5 - Test map phase function based on secondary index.~n"),
     verify_test_data_exists(),
     riakbloom:delete_filter(<<"testfilter">>),
     timer:sleep(2000),
@@ -142,15 +159,15 @@ run_test_4() ->
     true = riakbloom:check_key(<<"testfilter">>, <<"key2">>),
     {ok, C} = riak:local_client(),
     {ok, [<<"key2">>]} = C:mapred(<<"testbucket">>, [{map, {modfun, riakbloom_mapreduce, map_riakbloom}, "{\"filter_id\":\"testfilter\",\"key\":\"index:key_bin\"}", false}, {map, {modfun, riakbloom_mapreduce, map_key}, none, true}]),
-    io:format("TEST COMPLETED: run_test_4.~n"),
+    io:format("TEST COMPLETED: run_test_5.~n"),
     ok.
 
 
 %% Test map phase function based on user metadata
 %% 2 second delay was inserted at key stages to ensure that the post commit hook
 %% has been processed (due to slow test environment)
-run_test_5() ->
-    io:format("TEST: run_test_5 - Test map phase function based on user metadata.~n"),
+run_test_6() ->
+    io:format("TEST: run_test_6 - Test map phase function based on user metadata.~n"),
     verify_test_data_exists(),
     riakbloom:delete_filter(<<"testfilter">>),
     timer:sleep(2000),
@@ -159,12 +176,12 @@ run_test_5() ->
     true = riakbloom:check_key(<<"testfilter">>, <<"key4">>),
     {ok, C} = riak:local_client(),
     {ok, [<<"key4">>]} = C:mapred(<<"testbucket">>, [{map, {modfun, riakbloom_mapreduce, map_riakbloom}, "{\"filter_id\":\"testfilter\",\"key\":\"meta:X-Riak-Meta-Key\"}", false}, {map, {modfun, riakbloom_mapreduce, map_key}, none, true}]),
-    io:format("TEST COMPLETED: run_test_5.~n"),
+    io:format("TEST COMPLETED: run_test_6.~n"),
     ok.
 
 %% Test filter cache expiry
-run_test_6() ->
-    io:format("TEST: run_test_6 - Test filter cache expiry.~n"),
+run_test_7() ->
+    io:format("TEST: run_test_7 - Test filter cache expiry.~n"),
     riakbloom:delete_filter(<<"testfilter">>),
     timer:sleep(2000),
     ok = riakbloom:create_filter(<<"testfilter">>, [<<"key4">>], 10, 0.001, 0),
@@ -175,12 +192,12 @@ run_test_6() ->
     Dur = 1000 * (Delay + 2),
     timer:sleep(Dur),
     0 = riakbloom:locally_cached_filter_count(),
-    io:format("TEST COMPLETED: run_test_6.~n"),
+    io:format("TEST COMPLETED: run_test_7.~n"),
     ok.
 
 %% Test cache refresh on update
-run_test_7() ->
-    io:format("TEST: run_test_7 - Test cache refresh on update.~n"),
+run_test_8() ->
+    io:format("TEST: run_test_8 - Test cache refresh on update.~n"),
     riakbloom:delete_filter(<<"testfilter">>),
     timer:sleep(2000),
     ok = riakbloom:create_filter(<<"testfilter">>, [<<"key4">>], 10, 0.001, 0),
@@ -193,9 +210,5 @@ run_test_7() ->
     true = riakbloom:check_key(<<"testfilter">>, <<"key4">>),
     true = riakbloom:check_key(<<"testfilter">>, <<"key3">>),
     false = riakbloom:check_key(<<"testfilter">>, <<"key2">>),
-    io:format("TEST COMPLETED: run_test_7.~n"),
+    io:format("TEST COMPLETED: run_test_8.~n"),
     ok.
-
-
-
-
