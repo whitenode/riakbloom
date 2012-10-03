@@ -1,9 +1,7 @@
 Overview
 ========
 
-The **riakbloom** server is a collection of components that allows Bloom filters to be created and accessed through mapreduce jobs. AS filters are stored in a special bucket, it is also possible to create and serialize filters outside Riak and then upload them for later use in mapreduce jobs. In order to improve the efficiency of mapreduce filtering, the solution also consists of a caching server process, and it must therefore be deployed onto every Riak instance.
-
-*The riakbloom server is still considered experimental.*
+The **riakbloom** server is a collection of components that allows Bloom filters to be created and accessed through mapreduce jobs. As filters are stored in a designated bucket, it is possible to create and serialize filters outside Riak and then upload them for later use in mapreduce jobs. In order to improve the efficiency of mapreduce filtering, the solution also consists of a caching server process, and it must therefore be deployed onto every Riak instance.
 
 Additional information and examples will be made available on my [website](http://www.whitenode.com).
 
@@ -131,9 +129,4 @@ Creating Bloom filters based on external data
 Filters can be created externally based on the [ebloom](https://github.com/basho/ebloom) module and then uploaded to the bucket in serialized form. That is all that is required in order to make them available to be used in Riak mapreduce jobs.
 
 To simplify this process, I have created the [riakbloomutil](https://github.com/whitenode/riakbloomutil) utility. This makes it possible to create and update filters based on keys in external files.
-
-
-
-
-
 
