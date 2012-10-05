@@ -84,14 +84,16 @@ map_riakbloom(RiakObject, Props, JsonArg) ->
     end,
     case {LookupKey,
           proplists:get_value(<<"filter_id">>, Args),
-          proplists:get_value(<<"operation">>, Args)} of
+          proplists:get_value(<<"exclude">>, Args)} of
         {error, _, _} ->
             Include = true;
         {_, undefined, _} ->
             Include = true;
-        {_, FilterID, <<"exclude">>} ->
+        {_, FilterID, true} ->
             Include = check_filter(FilterID, LookupKey, false);
-        {_, FilterID, "exclude"} ->   
+        {_, FilterID, <<"true">>} ->
+            Include = check_filter(FilterID, LookupKey, false);
+        {_, FilterID, "true"} ->   
             Include = check_filter(FilterID, LookupKey, false);
         {_, FilterID, _} ->
             Include = check_filter(FilterID, LookupKey, true)
@@ -118,11 +120,11 @@ reduce_riakbloom(List, JsonArg) ->
 %% hidden
 add_keylist_to_filter(undefined, _, _, _, _) ->
     [];
-add_keylist_to_filter(FID, undefined, _, _, _) ->
+add_keylist_to_filter(_, undefined, _, _, _) ->
     [];
-add_keylist_to_filter(FID, _, undefined, _, _) ->
+add_keylist_to_filter(_, _, undefined, _, _) ->
     [];
-add_keylist_to_filter(FID, _, _, undefined, _) ->
+add_keylist_to_filter(_, _, _, undefined, _) ->
     [];
 add_keylist_to_filter(FID, E, P, S, KeyList) when is_binary(E) ->
     add_keylist_to_filter(FID, binary_to_list(E), P, S, KeyList);

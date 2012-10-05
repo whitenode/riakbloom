@@ -58,7 +58,7 @@ This function takes an argument that has to be a correctly formatted JSON docume
 
 It can also be specified as **"index:<index_name>"** or **"meta:<user metadata field name>"**, in order to based the lookup on the value stored in a secondary index or user metadata field.
 
-**operation** - Optional parameter indicating whether to include or exclude records that match the filter. It defaults to include.
+**exclude** - Optional parameter indicating whether to include or exclude records that match the filter. It defaults to *"false"*.
 
 Below are a few configuration examples:
 
@@ -73,7 +73,7 @@ Below are a few configuration examples:
     "{
         "filter_id":"filter1",
         "key":"index:idx_bin",
-        "operation":"exclude"
+        "exclude":"true"
     }"
 
 **Configuration for filtering based on user metadata field Name** 

@@ -115,10 +115,14 @@ handle_call({load_filter, FilterID}, _From, #state{bucket = Bucket} = State) ->
             {ok, C} = riak:local_client(),
             case C:get(Bucket, FilterID) of
                 {ok, RO} ->
-                    {ok, Filter} = deserialize_and_reconcile_filters(RO),
-                    TS = get_timestamp(),
-                    ets:insert(?RIAKBLOOM_ETS, {FilterID, {Filter, TS}}),
-                    {reply, Filter, State};
+                    case deserialize_and_reconcile_filters(RO) of
+                        none ->
+                            {reply, {error, notfound}, State};
+                        {ok, Filter} ->
+                            TS = get_timestamp(),
+                            ets:insert(?RIAKBLOOM_ETS, {FilterID, {Filter, TS}}),
+                            {reply, Filter, State}
+                    end;
                 {error, _} ->
                     {reply, {error, notfound}, State}
             end;
@@ -177,10 +181,17 @@ get_timestamp() ->
     
 %% hidden
 deserialize_and_reconcile_filters(RO) ->
-    [V | VL] = riak_object:get_values(RO),
-    {ok, Filter} = ebloom:deserialize(V),
-    lists:foreach(fun(F) ->
-                      {ok, DF} = ebloom:deserialize(F),
-                      ebloom:union(Filter, DF)
-                  end, VL),
-    {ok, Filter}.
+    case [D || D <- riak_object:get_values(RO), D =/= <<>>] of
+        [] ->
+            none;
+        [V | VL] ->
+            {ok, Filter} = ebloom:deserialize(V),
+            lists:foreach(fun(F) ->
+                              {ok, DF} = ebloom:deserialize(F),
+                              ebloom:union(Filter, DF)
+                          end, VL),
+            {ok, Filter}
+    end.
+
+
+

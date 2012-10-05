@@ -142,7 +142,7 @@ run_test_4() ->
     timer:sleep(2000),
     false = riakbloom:check_key(<<"testfilter">>, <<"key4">>),
     {ok, C} = riak:local_client(),
-    {ok, [<<"key4">>]} = C:mapred(<<"testbucket">>, [{map, {modfun, riakbloom_mapreduce, map_riakbloom}, "{\"filter_id\":\"testfilter\",\"operation\":\"exclude\"}", false}, {map, {modfun, riakbloom_mapreduce, map_key}, none, true}]),
+    {ok, [<<"key4">>]} = C:mapred(<<"testbucket">>, [{map, {modfun, riakbloom_mapreduce, map_riakbloom}, "{\"filter_id\":\"testfilter\",\"exclude\":\"true\"}", false}, {map, {modfun, riakbloom_mapreduce, map_key}, none, true}]),
     io:format("TEST COMPLETED: run_test_4.~n"),
     ok.
 
