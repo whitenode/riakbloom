@@ -3,7 +3,7 @@ Overview
 
 The **riakbloom** server is a collection of components that allows Bloom filters to be created and accessed through mapreduce jobs. As filters are stored in a designated bucket, it is possible to create and serialize filters outside Riak and then upload them for later use in mapreduce jobs. In order to improve the efficiency of mapreduce filtering, the solution also consists of a caching server process, and it must therefore be deployed onto every Riak instance.
 
-Additional information and examples will be made available on my [website](http://www.whitenode.com).
+An example of how riakbloom is used can be found in the EXAMPLE.markdown file.
 
 Installation
 ============
