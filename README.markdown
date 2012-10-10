@@ -12,9 +12,10 @@ The riakbloom server must be deployed together with Riak (on the same VM) in ord
 
 The solution can be compiled as follows:
 
-    $ git clone git@github.com:whitenode/riak.git
-    $ cd riak
-    $ make all
+    $> git clone git@github.com:whitenode/riak.git
+    $> cd riak
+    $> git checkout riakbloom 
+    $> make all
 
 The riakbloom server will be initiated when riak starts up.
 
