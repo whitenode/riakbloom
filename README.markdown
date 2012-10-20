@@ -1,7 +1,7 @@
 Overview
 ========
 
-The **riakbloom** server is a collection of components that allows Bloom filters to be created and accessed through mapreduce jobs. As filters are stored in a designated bucket, it is possible to create and serialize filters outside Riak and then upload them for later use in mapreduce jobs. In order to improve the efficiency of mapreduce filtering, the solution also consists of a caching server process, and it must therefore be deployed onto every Riak instance.
+The **riakbloom** server is a collection of components that allows Bloom filters to be created and accessed through mapreduce jobs. As filters are stored in a designated bucket, it is possible to create and serialize filters outside Riak and then upload them for later use in mapreduce jobs. In order to improve the efficiency of map phase mapreduce filtering, the solution also consists of a simple caching server process, and it must therefore be deployed onto every Riak instance.
 
 An example of how riakbloom is used can be found in the EXAMPLE.markdown file.
 
@@ -18,6 +18,14 @@ The solution can be compiled as follows:
     $> make all
 
 The riakbloom server will be initiated when riak starts up.
+
+The dependencies were added in 2 places. A line a shown below was added to *rebar.config* for **riakbloom** to ensure the application is included in the build.
+
+    {riakbloom, ".*", {git, "git://github.com/whitenode/riakbloom", {branch, "master"}}}
+
+The other dependency added was to the *rel/teltool.config* file. In this **riakbloom** was added to the list of applications and the following application config was added:
+
+    {app, riakbloom, [{incl_cond, include}]}
 
 Configuration
 =============
@@ -47,9 +55,9 @@ The **map_riakbloom** function allows filtering to be performed based on an exis
 
 It can be configured to either filter on the record key (default) or a secondary index or user metadata value.
 
-By default any record matching the filter will be included in the result, but it is also possible to configure the function to instead *exclude* based on filter match. As Bloom filters always have a false positive probability (meaning keys may match even though they were not added to the filter), using the map function in *exclude* mode means that the false positive probability is changed into the opposite, and there is a probability that records may be excluded from the result incorrectly.
+By default any record matching the filter will be included in the result set, but it is also possible to configure the function to instead *exclude* based on filter match. As Bloom filters always have a false positive probability (meaning keys may match even though they were not added to the filter), using the map function in *exclude* mode means that the false positive probability is changed into a fasle negative instead, and there is a probability that records may be excluded from the result incorrectly.
 
-If an error occurrs, the record will always be part of the result.
+If an error occurs, e.g. the index or meta field to filter on can not be found on the record, the record will not be filtered and always be part of the result set.
 
 This function takes an argument that has to be a correctly formatted JSON document containing the following fields:
 
@@ -81,7 +89,7 @@ Below are a few configuration examples:
 
     "{
         "filter_id":"filter1",
-        "key":"meta:X-Riak_Meta-Name"
+        "key":"meta:X-Riak-Meta-Name"
     }"
 
 MapReduce function reduce_riakbloom
