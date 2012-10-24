@@ -59,7 +59,9 @@ By default any record matching the filter will be included in the result set, bu
 
 If an error occurs, e.g. the index or meta field to filter on can not be found on the record, the record will not be filtered and always be part of the result set.
 
-This function takes an argument that has to be a correctly formatted JSON document containing the following fields:
+This function takes an argument that has to be a correctly formatted JSON document with the following fields:
+
+**bucket** - only records belonging to this specified bucket will be filtered. All other records will pass through without filtering being applied. This is an optional parameter - if not specified all records will be filtered.
 
 **filter_id** - Name of the filter to use. If the filter does not exist, all records will be passed through as part of the result set.
 
@@ -85,9 +87,10 @@ Below are a few configuration examples:
         "exclude":"true"
     }"
 
-**Configuration for filtering based on user metadata field Name** 
+**Configuration for filtering based on user metadata field Name for a single bucket** 
 
     "{
+        "bucket":"person",
         "filter_id":"filter1",
         "key":"meta:X-Riak-Meta-Name"
     }"

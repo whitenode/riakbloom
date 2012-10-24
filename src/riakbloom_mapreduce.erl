@@ -64,39 +64,50 @@ map_riakbloom(RiakObject, Props, JsonArg) ->
     Key = riak_object:key(RiakObject),
     MetaDataList = riak_object:get_metadatas(RiakObject),
     {struct, Args} = mochijson2:decode(JsonArg),
-    case proplists:get_value(<<"key">>, Args) of
+    LookupKey = case proplists:get_value(<<"key">>, Args) of
         <<"meta:", Val/binary>> ->
             case get_metadata_value(MetaDataList, meta, Val) of
                 undefined ->
-                    LookupKey = error;
+                    error;
                 Result ->
-                    LookupKey = Result
+                    Result
             end;
         <<"index:", Val/binary>> ->
             case get_metadata_value(MetaDataList, index, Val) of
                 undefined ->
-                    LookupKey = error;
+                    error;
                 Result ->
-                    LookupKey = Result
+                    Result
             end;
         _ ->
-            LookupKey = Key
+            Key
     end,
-    case {LookupKey,
+    Include = case {LookupKey,
+          proplists:get_value(<<"bucket">>, Args),
           proplists:get_value(<<"filter_id">>, Args),
           proplists:get_value(<<"exclude">>, Args)} of
-        {error, _, _} ->
-            Include = true;
-        {_, undefined, _} ->
-            Include = true;
-        {_, FilterID, true} ->
-            Include = check_filter(FilterID, LookupKey, false);
-        {_, FilterID, <<"true">>} ->
-            Include = check_filter(FilterID, LookupKey, false);
-        {_, FilterID, "true"} ->   
-            Include = check_filter(FilterID, LookupKey, false);
-        {_, FilterID, _} ->
-            Include = check_filter(FilterID, LookupKey, true)
+        {error, _, _, _} ->
+            true;
+        {_, _, undefined, _} ->
+            true;
+        {_, undefined, FilterID, true} ->
+            check_filter(FilterID, LookupKey, false);
+        {_, Bucket, FilterID, true} ->
+            check_filter(FilterID, LookupKey, false);
+        {_, undefined, FilterID, <<"true">>} ->
+            check_filter(FilterID, LookupKey, false);
+        {_, Bucket, FilterID, <<"true">>} ->
+            check_filter(FilterID, LookupKey, false);
+        {_, undefined, FilterID, "true"} ->   
+            check_filter(FilterID, LookupKey, false);
+        {_, Bucket, FilterID, "true"} ->   
+            check_filter(FilterID, LookupKey, false);
+        {_, undefined, FilterID, _} ->
+            check_filter(FilterID, LookupKey, true);    
+        {_, Bucket, FilterID, _} ->
+            check_filter(FilterID, LookupKey, true);
+        _ ->
+            true
     end,
     case Include of
         true ->
