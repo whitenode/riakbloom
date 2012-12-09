@@ -40,15 +40,20 @@ map_key(RiakObject, Props, Arg) when is_list(Arg) ->
 map_key(RiakObject, Props, Arg) when is_atom(Arg) ->
     map_key(RiakObject, Props, <<"">>);
 map_key(RiakObject, _, Arg) when is_binary(Arg) ->
-    Bucket = riak_object:bucket(RiakObject),
-    Key = riak_object:key(RiakObject),
-    case Arg of
-        Bucket ->
-            [Key];
-        <<"">> ->
-            [Key];
-        _ ->
-            []
+    case is_deleted(RiakObject) of
+        true ->
+            [];
+        false ->
+            Bucket = riak_object:bucket(RiakObject),
+            Key = riak_object:key(RiakObject),
+            case Arg of
+                Bucket ->
+                    [Key];
+                <<"">> ->
+                    [Key];
+                _ ->
+                    []
+            end
     end;
 map_key(_, _, _) ->
     [].   
@@ -60,60 +65,65 @@ map_key(_, _, _) ->
 map_riakbloom({error, notfound}, _, _) ->
     [];
 map_riakbloom(RiakObject, Props, JsonArg) ->
-    Bucket = riak_object:bucket(RiakObject),
-    Key = riak_object:key(RiakObject),
-    MetaDataList = riak_object:get_metadatas(RiakObject),
-    {struct, Args} = mochijson2:decode(JsonArg),
-    LookupKey = case proplists:get_value(<<"key">>, Args) of
-        <<"meta:", Val/binary>> ->
-            case get_metadata_value(MetaDataList, meta, Val) of
-                undefined ->
-                    error;
-                Result ->
-                    Result
-            end;
-        <<"index:", Val/binary>> ->
-            case get_metadata_value(MetaDataList, index, Val) of
-                undefined ->
-                    error;
-                Result ->
-                    Result
-            end;
-        _ ->
-            Key
-    end,
-    Include = case {LookupKey,
-          proplists:get_value(<<"bucket">>, Args),
-          proplists:get_value(<<"filter_id">>, Args),
-          proplists:get_value(<<"exclude">>, Args)} of
-        {error, _, _, _} ->
-            true;
-        {_, _, undefined, _} ->
-            true;
-        {_, undefined, FilterID, true} ->
-            check_filter(FilterID, LookupKey, false);
-        {_, Bucket, FilterID, true} ->
-            check_filter(FilterID, LookupKey, false);
-        {_, undefined, FilterID, <<"true">>} ->
-            check_filter(FilterID, LookupKey, false);
-        {_, Bucket, FilterID, <<"true">>} ->
-            check_filter(FilterID, LookupKey, false);
-        {_, undefined, FilterID, "true"} ->   
-            check_filter(FilterID, LookupKey, false);
-        {_, Bucket, FilterID, "true"} ->   
-            check_filter(FilterID, LookupKey, false);
-        {_, undefined, FilterID, _} ->
-            check_filter(FilterID, LookupKey, true);    
-        {_, Bucket, FilterID, _} ->
-            check_filter(FilterID, LookupKey, true);
-        _ ->
-            true
-    end,
-    case Include of
+    case is_deleted(RiakObject) of
         true ->
-            [{{Bucket, Key}, Props}];
-        _ ->
-            []
+            [];
+        false ->
+            Bucket = riak_object:bucket(RiakObject),
+            Key = riak_object:key(RiakObject),
+            MetaDataList = riak_object:get_metadatas(RiakObject),
+            {struct, Args} = mochijson2:decode(JsonArg),
+            LookupKey = case proplists:get_value(<<"key">>, Args) of
+                <<"meta:", Val/binary>> ->
+                    case get_metadata_value(MetaDataList, meta, Val) of
+                        undefined ->
+                            error;
+                        Result ->
+                            Result
+                    end;
+                <<"index:", Val/binary>> ->
+                    case get_metadata_value(MetaDataList, index, Val) of
+                        undefined ->
+                            error;
+                        Result ->
+                            Result
+                    end;
+                _ ->
+                    Key
+            end,
+            Include = case {LookupKey,
+                  proplists:get_value(<<"bucket">>, Args),
+                  proplists:get_value(<<"filter_id">>, Args),
+                  proplists:get_value(<<"exclude">>, Args)} of
+                {error, _, _, _} ->
+                    true;
+                {_, _, undefined, _} ->
+                    true;
+                {_, undefined, FilterID, true} ->
+                    check_filter(FilterID, LookupKey, false);
+                {_, Bucket, FilterID, true} ->
+                    check_filter(FilterID, LookupKey, false);
+                {_, undefined, FilterID, <<"true">>} ->
+                    check_filter(FilterID, LookupKey, false);
+                {_, Bucket, FilterID, <<"true">>} ->
+                    check_filter(FilterID, LookupKey, false);
+                {_, undefined, FilterID, "true"} ->   
+                    check_filter(FilterID, LookupKey, false);
+                {_, Bucket, FilterID, "true"} ->   
+                    check_filter(FilterID, LookupKey, false);
+                {_, undefined, FilterID, _} ->
+                    check_filter(FilterID, LookupKey, true);    
+                {_, Bucket, FilterID, _} ->
+                    check_filter(FilterID, LookupKey, true);
+                _ ->
+                    true
+            end,
+            case Include of
+                true ->
+                    [{{Bucket, Key}, Props}];
+                _ ->
+                    []
+            end
     end.
 
 %% @spec reduce_riakbloom([term()], term()) -> [] | [term()]
@@ -221,3 +231,20 @@ get_metadata_value(MetaData, Type, MetaName) ->
             end;
         error -> undefined
     end.
+
+%% hidden
+is_deleted(RiakObject) ->
+    MetaDataList = riak_object:get_metadatas(RiakObject),
+    delete_header_exists(MetaDataList).
+    
+%% hidden
+delete_header_exists([]) ->
+    false;
+delete_header_exists([Dict | D]) ->
+    case dict:is_key(<<"X-Riak-Deleted">>, Dict) of
+        true ->
+            true;
+        false ->
+            delete_header_exists(D)
+    end.
+    
